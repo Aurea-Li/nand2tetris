@@ -1,0 +1,7 @@
+# Extraneous files
+*.cmp
+*.tst
+*.out
+
+# Folder
+tools/*

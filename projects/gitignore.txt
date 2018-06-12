@@ -1,4 +1,0 @@
-# HDL Files
-*.cmp
-*.tst
-*.out
