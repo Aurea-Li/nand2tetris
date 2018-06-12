@@ -1,3 +1,4 @@
-**/.cmp
-**/.tst
-**/.out
+# HDL Files
+*.cmp
+*.tst
+*.out
