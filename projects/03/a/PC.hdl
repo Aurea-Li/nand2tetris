@@ -18,11 +18,14 @@ CHIP PC {
     PARTS:
 
 
-    Inc16 (in = in, out = incout);
-
-    Register (in = in, load = load, out = step1);
-    Mux16 (a = step1, b = false, sel = reset, out = step2);
-    Mux16 (a = step2, b = incout, sel = inc, out = out);
+    Inc16 (in = prevout, out = incout);
+    
+    Mux16 (a = prevout, b = incout, sel = inc, out = step1);
+    Mux16 (a = step1, b = in, sel = load, out = step2);
+    Mux16 (a = step2, b = false, sel = reset, out = step3);
+    
+    
+    Register (in = step3, load = true, out = out, out = prevout);
     
     
 
