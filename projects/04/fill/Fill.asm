@@ -11,4 +11,36 @@
 // "white" in every pixel;
 // the screen should remain fully clear as long as no key is pressed.
 
-// Put your code here.
+@SCREEN
+D=A
+@addr
+M=D         // addr = 16384
+            // (screen's base address)
+@i
+M=0         
+@n
+M=8192      // n = 256 * 32
+
+(LOOP)
+@n
+D=M         // D = n
+@i
+D=M-D       // D = i - n
+@END
+D;JGE       // if (i-n) >= 0 goto END
+
+@addr
+A=M
+M=-1        // RAM[addr] = 111...111
+@i
+M=M+1       // i++
+@addr
+M=M+1       // addr++
+
+@LOOP
+0;JMP
+
+(END)
+@END
+0;JMP
+
