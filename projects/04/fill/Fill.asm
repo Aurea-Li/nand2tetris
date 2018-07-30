@@ -11,6 +11,13 @@
 // "white" in every pixel;
 // the screen should remain fully clear as long as no key is pressed.
 
+
+@8192
+D=A
+@n
+M=D         // n = 256 x 32
+
+(LOOP)
 @SCREEN
 D=A
 @addr
@@ -18,29 +25,39 @@ M=D         // addr = 16384
             // (screen's base address)
 @i
 M=0         
-@n
-M=8192      // n = 256 * 32
 
-(LOOP)
-@n
-D=M         // D = n
-@i
-D=M-D       // D = i - n
-@END
-D;JGE       // if (i-n) >= 0 goto END
+(FILLSCREEN)
+@KBD
+D=M
+@WHITE
+D;JEQ       // if no key pressed, color white
 
-@addr
+
+@addr       // else, color black and iterate +1
 A=M
 M=-1        // RAM[addr] = 111...111
+@ITERATE
+0;JMP
+
+(WHITE)
+@addr
+A=M
+M=0         // RAM[addr] = 000...000
+
+(ITERATE)
 @i
 M=M+1       // i++
 @addr
 M=M+1       // addr++
 
+@n
+D=M         // D = n
+@i
+D=M-D       // D = i - n
 @LOOP
+D;JGE       // if (i-n) >= 0 reset to beginning
+@FILLSCREEN
 0;JMP
 
-(END)
-@END
-0;JMP
+
 
