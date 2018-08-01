@@ -40,15 +40,13 @@ CHIP CPU {
 
     PARTS:
     // A REGISTER
-
     
     Not (in = instruction[0], out = notinstruct0);
 
     // Output a if sel == 0, b if sel == 1
+
     Mux16 (a = instruction, b = prevALUOut, sel = instruction[10], out = AIn); 
-
     Register (in = AIn, load = notinstruct0, out = AOut, out = addressM); // if load == 1 then in, else stay the same
-
     Mux16 (a = AOut, b = inM, sel = instruction[3], out = ALUIn); // use A if sel == 0, M if sel == 1
 
     // D REGISTER
@@ -59,10 +57,6 @@ CHIP CPU {
 
     ALU (x = DOut, y = ALUIn, zx = instruction[4] , nx = instruction[5] , zy = instruction[6] ,
         ny = instruction[7], f = instruction[8], no = instruction[9], out= outM , out = ALUOut, zr= zr, ng= ng); 
-
-    // PC
-
-    PC (in = AOut, reset = reset, load = notinstruct0, inc = instruction[0], out = pc);
 
     // M Register
 
@@ -84,13 +78,20 @@ CHIP CPU {
     And (a = notngzr, b = zerocheck, out = j3);
 
 
+    // Check if conditions are met
+    Xor (a = instruction[13], b = ng, out = xorj1);
+    Xor (a = instruction[14], b = zr, out = xorj2);
+    Xor (a = instruction[15], b = j3, out = xorj3);
 
+    And (a = xorj1, b = xorj2, out = xorj12);
+    And (a = xorj12, b = xorj3, out = jmpcond);
 
+    // PC
 
-    if j1, j2, j3 then jump;
-    if zr = j2 and ng = j1 
+    Or (a = reset, b = jumpcond, out = notinc);
+    Not (in = notinc, out = incflag);
 
-    
+    PC (in = AOut, reset = reset, load = jumpcond, inc = incflag, out = pc);
 
 
 }
