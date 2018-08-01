@@ -41,26 +41,37 @@ CHIP CPU {
     PARTS:
     // A REGISTER
     
-    Not (in = instruction[0], out = notinstruct0);
+    Not (in = instruction[15], out = notinstruct0);
 
     // Output a if sel == 0, b if sel == 1
 
-    Mux16 (a = instruction, b = prevALUOut, sel = instruction[10], out = AIn); 
-    Register (in = AIn, load = notinstruct0, out = AOut, out = addressM); // if load == 1 then in, else stay the same
-    Mux16 (a = AOut, b = inM, sel = instruction[3], out = ALUIn); // use A if sel == 0, M if sel == 1
+    // if instruct0 = 1 and instruct5 = 1, then feed ALU output to A register
+    And (a = instruction[15], b = instruction[5], out = AMuxSel);
+
+    Or (a = AMuxSel, b = notinstruct0, out = ARegLoad);
+
+    Mux16 (a = instruction, b = ALUOut, sel = AMuxSel, out = AIn); 
+    ARegister (in = AIn, load = ARegLoad, out = AOut, out[0..14] = addressM); // if load == 1 then in, else stay the same
+    Mux16 (a = AOut, b = inM, sel = instruction[12], out = ALUIn); // use A if sel == 0, M if sel == 1
 
     // D REGISTER
 
-    Register (in = prevALUOut, sel = instruction[11], out = DOut);
+    And (a = instruction[15], b = instruction[4], out = DloadSel);
+    DRegister (in = ALUOut, load = DloadSel, out = DOut);
 
     // ALU
 
-    ALU (x = DOut, y = ALUIn, zx = instruction[4] , nx = instruction[5] , zy = instruction[6] ,
-        ny = instruction[7], f = instruction[8], no = instruction[9], out= outM , out = ALUOut, zr= zr, ng= ng); 
+      ALU (x = DOut, y = ALUIn, zx = instruction[11] , nx = instruction[10] , zy = instruction[9] ,
+        ny = instruction[8], f = instruction[7], no = instruction[6], out= outM , out = ALUOut, 
+        out[0..7] = ALUOut0, out[8..15] = ALUOut1, zr = zr, ng = ng); 
+
+
 
     // M Register
 
-    And (a = instruction[12], b = true, out = writeM); // set writeM to true if dest field specifies to output to M register
+    And (a = instruction[15], b = instruction[3], out = MMuxSel);
+
+    And (a = MMuxSel, b = true, out = writeM); // set writeM to true if dest field specifies to output to M register
 
     // Jump
 
@@ -68,30 +79,36 @@ CHIP CPU {
     // if (out < 0) set ng = 1
 
     // Check if out == 0 exactly
-    Or8Way (in = ALUOut[0..7], out = Or0);
-    Or8Way (in = ALUOut[8..15], out = Or1);
+    Or8Way (in = ALUOut0, out = Or0);
+    Or8Way (in = ALUOut1, out = Or1);
     Or (a = Or0, b = Or1, out = zerocheck); // if ZeroCheck = 0, then ALUOut == 0, otherwise not
 
     // Determine if out > 0 (check value of j3)
     Not (in = ng, out = notng);
-    And (a = notng, b = zr, out = notngzr);
-    And (a = notngzr, b = zerocheck, out = j3);
+    And (a = notng, b = zerocheck, out = j3);
+
 
 
     // Check if conditions are met
-    Xor (a = instruction[13], b = ng, out = xorj1);
-    Xor (a = instruction[14], b = zr, out = xorj2);
-    Xor (a = instruction[15], b = j3, out = xorj3);
+    Xor (a = instruction[2], b = ng, out = xorj1);
+    Xor (a = instruction[1], b = zr, out = xorj2);
+    Xor (a = instruction[0], b = j3, out = xorj3);
 
-    And (a = xorj1, b = xorj2, out = xorj12);
-    And (a = xorj12, b = xorj3, out = jmpcond);
+    Not (in = xorj1, out = nxorj1);
+    Not (in = xorj2, out = nxorj2);
+    Not (in = xorj3, out = nxorj3);
+
+    
+    And (a = nxorj1, b = nxorj2, out = nxorj12);
+    And (a = nxorj12, b = nxorj3, out = nxorj123);
+    And (a = instruction[15], b = nxorj123, out = jmpcond);
 
     // PC
 
-    Or (a = reset, b = jumpcond, out = notinc);
+    Or (a = reset, b = jmpcond, out = notinc);
     Not (in = notinc, out = incflag);
 
-    PC (in = AOut, reset = reset, load = jumpcond, inc = incflag, out = pc);
+    PC (in = AOut, reset = reset, load = jmpcond, inc = incflag, out[0..14] = pc);
 
 
 }
