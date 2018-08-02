@@ -70,13 +70,9 @@ CHIP CPU {
     // M Register
 
     And (a = instruction[15], b = instruction[3], out = MMuxSel);
-
     And (a = MMuxSel, b = true, out = writeM); // set writeM to true if dest field specifies to output to M register
 
     // Jump
-
-    // if (out == 0) set zr = 1
-    // if (out < 0) set ng = 1
 
     // Determine value of j3
     Not (in = zr, out = notzr);
