@@ -78,37 +78,26 @@ CHIP CPU {
     // if (out == 0) set zr = 1
     // if (out < 0) set ng = 1
 
-    // Check if out == 0 exactly
-    Or8Way (in = ALUOut0, out = Or0);
-    Or8Way (in = ALUOut1, out = Or1);
-    Or (a = Or0, b = Or1, out = zerocheck); // if ZeroCheck = 0, then ALUOut == 0, otherwise not
-
-    // Determine if out > 0 (check value of j3)
+    // Determine value of j3
+    Not (in = zr, out = notzr);
     Not (in = ng, out = notng);
-    And (a = notng, b = zerocheck, out = j3);
 
+    And (a = notzr, b = notng, out = j3); //j3 = 1 if zr = 0 and ng = 0, o/w j3 = 1
 
+    And (a = instruction[2], b = ng, out = andj1);
+    And (a = instruction[1], b = zr, out = andj2);
+    And (a = instruction[0], b = j3, out = andj3);
 
-    // Check if conditions are met
-    Xor (a = instruction[2], b = ng, out = xorj1);
-    Xor (a = instruction[1], b = zr, out = xorj2);
-    Xor (a = instruction[0], b = j3, out = xorj3);
-
-    Not (in = xorj1, out = nxorj1);
-    Not (in = xorj2, out = nxorj2);
-    Not (in = xorj3, out = nxorj3);
-
-    
-    And (a = nxorj1, b = nxorj2, out = nxorj12);
-    And (a = nxorj12, b = nxorj3, out = nxorj123);
-    And (a = instruction[15], b = nxorj123, out = jmpcond);
+    Or (a = andj1, b = andj2, out = andj1j2);
+    Or (a = andj1j2, b = andj3, out = andj); 
+    And (a = andj, b = instruction[15], out = jmpcond); // if jumpcond == 1, then jump
 
     // PC
 
     Or (a = reset, b = jmpcond, out = notinc);
     Not (in = notinc, out = incflag);
 
-    PC (in = AOut, reset = reset, load = jmpcond, inc = incflag, out[0..14] = pc);
+    PC (in = AOut, reset = reset, load = jmpcond, inc = incflag, out[0..14] = pc); 
 
 
 }
