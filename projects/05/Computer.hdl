@@ -19,7 +19,6 @@ CHIP Computer {
     IN reset;
 
     PARTS:
-    
 
 
     CPU(inM=MemOut, instruction=outROM, reset=reset , outM=outM, writeM= writeM, addressM=addressM, pc=pc); 
