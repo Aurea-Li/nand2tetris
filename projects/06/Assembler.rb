@@ -52,8 +52,6 @@ JUMP = {
   'JMP' => '111'
 }
 
-
-
 # Go through file once and save down all symbols in a symbol table (hash)
 
 # Converts integer into 15 bit binary number
@@ -101,9 +99,10 @@ def c_comp(instr)
   end
 end
 
+
+
 asm_filename = ARGV.first
 hack_filename =  asm_filename[0..-5] + ".hack"
-
 
 
 # Adding pre-defined symbols
@@ -121,8 +120,8 @@ symbols = {
   symbols['R' + i.to_s] = i
 end
 
+# First pass - adding labels into symbol hash
 line_num = 1
-
 File.open(asm_filename, "r").each do |line|
 
   line.strip!
@@ -140,24 +139,14 @@ File.open(asm_filename, "r").each do |line|
       line_num -= 1
       symbols[line[1..-2]] = line_num
     end
-    #
-    # # add variables
-    # if line[0] == '@' && line[1..-1].to_i != line[1..-1].to_i.to_s && !symbols[line[1..-1]]
-    #
-    #   binding.pry
-    #   symbols[line[1..-1]] = var_addr
-    #   var_addr += 1
-    # end
 
     line_num += 1
-
   end
 end
 
 
-
+# Second pass
 var_addr = 16
-
 File.open(hack_filename, "w") do |hack|
 File.open(asm_filename, "r").each do |asm|
 
