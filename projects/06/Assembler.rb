@@ -59,8 +59,11 @@ JUMP = {
 # Converts integer into 15 bit binary number
 def int_bin(num)
 
+
   bin = ''
   [*0..14].reverse.each do |i|
+
+    # binding.pry
     if num >= 2 ** i
       num -= 2 ** i
       bin += '1'
@@ -105,13 +108,13 @@ hack_filename =  asm_filename[0..-5] + ".hack"
 
 # Adding pre-defined symbols
 symbols = {
-  'SP'      => '0',
-  'LCL'     => '1',
-  'ARG'     => '2',
-  'THIS'    => '3',
-  'THAT'    => '4',
-  'SCREEN'  => '16384',
-  'KEYBOARD'=> '24576'
+  'SP'      => 0,
+  'LCL'     => 1,
+  'ARG'     => 2,
+  'THIS'    => 3,
+  'THAT'    => 4,
+  'SCREEN'  => 16384,
+  'KEYBOARD'=> 24576
 }
 
 16.times do |i|
@@ -119,12 +122,10 @@ symbols = {
 end
 
 line_num = 1
-var_addr = 16
 
 File.open(asm_filename, "r").each do |line|
 
   line.strip!
-
 
   # Ignore comments and blank lines
   if line[0..1] != "//" && !line.empty?
@@ -136,13 +137,17 @@ File.open(asm_filename, "r").each do |line|
 
     # add labels
     if line[0] == "(" && line[-1] == ")"
-      symbols[line[1..-2]] = line_num + 1
-
-    # add variables
-    elsif line[0] == '@' && line[1..-1].to_i != line[1..-1].to_i.to_s
-      symbols[line[1..-1]] = var_addr
-      var_addr += 1
+      line_num -= 1
+      symbols[line[1..-2]] = line_num
     end
+    #
+    # # add variables
+    # if line[0] == '@' && line[1..-1].to_i != line[1..-1].to_i.to_s && !symbols[line[1..-1]]
+    #
+    #   binding.pry
+    #   symbols[line[1..-1]] = var_addr
+    #   var_addr += 1
+    # end
 
     line_num += 1
 
@@ -151,7 +156,7 @@ end
 
 
 
-
+var_addr = 16
 
 File.open(hack_filename, "w") do |hack|
 File.open(asm_filename, "r").each do |asm|
@@ -169,8 +174,16 @@ File.open(asm_filename, "r").each do |asm|
     if asm[0] == '@'
 
       # if symbol (string)
-      if asm[1..-1].to_i != asm[1..-1].to_i.to_s
+      if asm[1..-1] != asm[1..-1].to_i.to_s
+
+        # if symbol is not stored
+        if !symbols[asm[1..-1]]
+          symbols[asm[1..-1]] = var_addr
+          var_addr += 1
+        end
+
         hack << '0' + int_bin(symbols[asm[1..-1]]) + "\n"
+
       # if number
       else
         hack << '0' + int_bin(asm[1..-1].to_i) + "\n"
