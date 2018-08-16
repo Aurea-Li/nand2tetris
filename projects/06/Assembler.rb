@@ -53,6 +53,7 @@ JUMP = {
 }
 
 
+
 # Go through file once and save down all symbols in a symbol table (hash)
 
 # Converts integer into 15 bit binary number
@@ -90,35 +91,96 @@ def c_comp(instr)
 
   # dest field is empty
   elsif jmp
-  
+
     return { dest: nil,
              comp: instr[0..(jmp-1)],
              jump: instr[(jmp+1)..-1] }
   end
 end
 
-
-
-
 asm_filename = ARGV.first
 hack_filename =  asm_filename[0..-5] + ".hack"
+
+
+
+# Adding pre-defined symbols
+symbols = {
+  'SP'      => '0',
+  'LCL'     => '1',
+  'ARG'     => '2',
+  'THIS'    => '3',
+  'THAT'    => '4',
+  'SCREEN'  => '16384',
+  'KEYBOARD'=> '24576'
+}
+
+16.times do |i|
+  symbols['R' + i.to_s] = i
+end
+
+line_num = 1
+var_addr = 16
+
+File.open(asm_filename, "r").each do |line|
+
+  line.strip!
+
+
+  # Ignore comments and blank lines
+  if line[0..1] != "//" && !line.empty?
+
+    # strip trailing comments
+    if line.include?("//")
+      line = line[0..(line.index("//")-1)].strip
+    end
+
+    # add labels
+    if line[0] == "(" && line[-1] == ")"
+      symbols[line[1..-2]] = line_num + 1
+
+    # add variables
+    elsif line[0] == '@' && line[1..-1].to_i != line[1..-1].to_i.to_s
+      symbols[line[1..-1]] = var_addr
+      var_addr += 1
+    end
+
+    line_num += 1
+
+  end
+end
+
+
+
 
 
 File.open(hack_filename, "w") do |hack|
 File.open(asm_filename, "r").each do |asm|
 
   asm.strip!
-  # Ignore comments and blank lines
-  if asm[0..1] != "//" && !asm.empty?
+  # Ignore comments, blank lines, and labels
+  if asm[0..1] != "//" && !asm.empty? && asm[0] != '('
+
+    # strip trailing comments
+    if asm.include?("//")
+      asm = asm[0..(asm.index("//")-1)].strip
+    end
 
     # A instruction
     if asm[0] == '@'
-      hack << '0' + int_bin(asm[1..-1].to_i) + "\n"
+
+      # if symbol (string)
+      if asm[1..-1].to_i != asm[1..-1].to_i.to_s
+        hack << '0' + int_bin(symbols[asm[1..-1]]) + "\n"
+      # if number
+      else
+        hack << '0' + int_bin(asm[1..-1].to_i) + "\n"
+      end
 
     # C instruction
     else
       components = c_comp(asm)
 
+      # binding.pry
       comp = components[:comp]
       jump = components[:jump]
       dest = components[:dest]
@@ -128,7 +190,6 @@ File.open(asm_filename, "r").each do |asm|
       elsif jump
         hack << '111' + COMP[comp] + '000' + JUMP[jump] + "\n"
       elsif dest
-        # binding.pry
         hack << '111' + COMP[comp] + DEST[dest] + '000' + "\n"
       end
     end
