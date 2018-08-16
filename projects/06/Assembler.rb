@@ -78,21 +78,23 @@ def c_comp(instr)
   jmp = instr.index(";")
 
   if eq && jmp
-    return [instr[0..(eq-1)],
-            instr[(eq+1)..(jmp-1)],
-            instr[(jmp+1)..-1]]
+    return { dest: instr[0..(eq-1)],
+             comp: instr[(eq+1)..(jmp-1)],
+             jump: instr[(jmp+1)..-1]  }
 
+  # jump field is empty
   elsif eq
-    return [instr[0..(eq-1)],
-            instr[(eq+1)..-1],
-            nil]
+    return { dest: instr[0..(eq-1)],
+             comp: instr[(eq+1)..-1],
+             jump: nil }
 
+  # dest field is empty
   elsif jmp
-    return [nil,
-            instr[(eq+1)..(jmp-1)],
-            instr[(jmp+1)..-1]]
+  
+    return { dest: nil,
+             comp: instr[0..(jmp-1)],
+             jump: instr[(jmp+1)..-1] }
   end
-
 end
 
 
@@ -106,16 +108,29 @@ File.open(hack_filename, "w") do |hack|
 File.open(asm_filename, "r").each do |asm|
 
   asm.strip!
-  # Strip out comments and blank lines
+  # Ignore comments and blank lines
   if asm[0..1] != "//" && !asm.empty?
 
     # A instruction
     if asm[0] == '@'
       hack << '0' + int_bin(asm[1..-1].to_i) + "\n"
+
     # C instruction
     else
-      comp = c_comp(asm)
-      ap comp
+      components = c_comp(asm)
+
+      comp = components[:comp]
+      jump = components[:jump]
+      dest = components[:dest]
+
+      if jump && dest
+        hack << '111' + COMP[comp] + DEST[dest] + JUMP[jump] + "\n"
+      elsif jump
+        hack << '111' + COMP[comp] + '000' + JUMP[jump] + "\n"
+      elsif dest
+        # binding.pry
+        hack << '111' + COMP[comp] + DEST[dest] + '000' + "\n"
+      end
     end
   end
 end
