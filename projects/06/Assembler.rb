@@ -1,3 +1,4 @@
+require 'ap'
 require 'pry'
 
 COMP = {
@@ -66,6 +67,7 @@ def int_bin(num)
       bin += '0'
     end
   end
+
   return bin
 end
 
@@ -76,7 +78,7 @@ def c_comp(instr)
   jmp = instr.index(";")
 
   if eq && jmp
-    return [instr[0..(eq-1),
+    return [instr[0..(eq-1)],
             instr[(eq+1)..(jmp-1)],
             instr[(jmp+1)..-1]]
 
